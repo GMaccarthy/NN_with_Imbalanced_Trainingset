@@ -1,0 +1,995 @@
+fwrite(DATA5,"PhD_Thesis_Dataset_17_1_24v2.csv",sep=",") 
+
+
+After removing 248 OLD CASES, 1973 participants from the 243,399 developed first ever strokes During follow-up,
+
+
+#######################################################################################################################################################
+DATA6<-DATA5[,c(44,41,2:8,10:15,18:31)]
+
+[1] 243399     29
+
+fwrite(DATA6,"PhD_Thesis_Dataset_17_1_24v3.csv",sep=",") 
+
+#########################################################################################################################################################
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+#CREATING BASELINE CHARACTERISTIC TABLE USING TABLE1 PACKAGE#
+
+Using the table1 Package to Create HTML Tables of Descriptive Statistics
+
+Table 1”, is a table that presents descriptive statistics of baseline characteristics of the study population stratified by exposure.
+#############################################################################################################################################
+
+install.packages("table1")
+install.packages("expss")
+install.packages("Publish")
+library(table1)
+library(arsenal)
+library(flextable)
+library(officer)
+library(magrittr)
+library(data.table)
+library(dplyr)
+library(readr)
+library(expss)
+
+===========================================================================================
+
+Data<-read_csv("PhD_Thesis_Dataset_17_1_24v3.csv")
+
+dim(Data)
+
+[1] 243399     29
+
+#Getting and setting variable and value labels
+
+Data$Sex <- factor(Data$Sex, levels=c("Male", "Female"))
+          
+Data$HTN <- factor(Data$HTN , levels=c("YES","NO"))
+
+Data$DM <- factor(Data$DM , levels=c("YES","NO"))
+
+Data$Smoking<- factor(Data$Smoking, levels=c("Current","Previous","Never"))
+                            
+Data$Alcohol<- factor(Data$Alcohol, levels=c("Current","Previous","Never"))                                    
+                 
+Data$Status <- factor(Data$CENSOR, levels=c("0","1"),labels=c("Censored", "Events"))
+
+ Data%>%count(Status)
+# A tibble: 2 × 2
+  Status        n
+  <fct>     <int>
+1 Censored 241426
+2 Events     1973
+
+fwrite(Data,"PhD_Thesis_Dataset_17_1_24v4.csv",sep=",") 
+
+#Getting and setting variable and value labels
+-----------------------------------------------------------------------------------------------
+library(expss)
+Data = apply_labels(Data,
+                      AGE       = "Age",
+                      BMI       = "Body Mass Index",
+                      Smoking    = "Smoking Status",
+                      Alcohol    = "Alcohol Status",
+                      HTN ="Hypertension",
+                      DM ="Diabetes",
+                      Sedentary_Lifestyle ="Sedentary Lifestyle",
+                      Cholesterol ="Total Cholesterol",
+                      SBP       ="Systolic Blood Pressure",
+                      DBP       = "Diastolic Blood Pressure",
+                      LDLc = "LDL",
+                      HDLc="HDL")
+
+=================================================================
+library(Publish)
+
+Data<-Units(Data, list(AGE      = "years",
+                      BMI       = "kg/m^2",
+                      Sedentary_Lifestyle ="hours/day",
+                      SBP       ="mmHg",
+                      DBP       = "mmHg",
+                      LDLc = "mmol/L",
+                      HDLc="mmol/L",
+                      Non_HDL="mmol/L",
+                      Cholesterol="mmol/L"))
+
+===============================================================================
+
+
+......................................................................
+                     
+.........................................................................
+
+units(Data$AGE)      <- "years"
+units(Data$BMI) <- "kg/m^2"
+units(Data$Sedentary_Lifestyle )="hours/day"
+units(Data$Cholesterol)="mmol/L"
+units(Data$LDLc)="mmol/L"
+units(Data$HDLc)="mmol/L"
+units(Data$SBP)      = "mmHg"
+units(Data$DBP)       = "mmHg"
+=====================================================================
+#units(Data$Duration)  <- "years"
+#units(Data$HTN)       <- "mmHg"
+#units(Data$DBP)       <- "mmHg"
+#units(Data$HbA1c)       <- "mmol/mol"
+#units(Data$Glucose)       <- "mmol/l"
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+library(arsenal)
+library(flextable)
+                                           
+
+ Char_table<-table1( ~ DM + HTN + Sex + AGE + BMI + Cholesterol + HDLc + LDLc  + SBP + DBP + Sedentary_Lifestyle +
+                                        Smoking + Alcohol |Status, data=Data,topclass="Rtable1-grid Rtable1-shade Rtable1-times")
+  Char_table
+
+ Char_table1B<-table1( ~ DM + HTN + Sex + AGE + BMI + Cholesterol + HDLc + LDLc + SBP + DBP + Sedentary_Lifestyle +
+                                        Smoking + Alcohol |Status, data=Data, 
+                                     overall="Total",topclass="Rtable1-grid Rtable1-shade Rtable1-times")
+
+t1flex(Char_table) %>% 
+             save_as_docx(path="Char_table1_17_01_24.docx")
+
+setwd("H:/DATA_13_4-23")
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+======================================================================================================================================
+table<-as.data.frame(Char_table,topclass="Rtable1-grid Rtable1-shade Rtable1-times")
+
+
+write2html(Char_table1B, file = "Baseline_Characteristics_Table1.html", title="Baseline Characteristics of Participant by Incident Stroke")
+
+write2pdf(Char_table1B, file = "Baseline_Characteristics_Tab.pdf", title="Baseline Characteristics of Participant by Incident Stroke")
+
+write2word(Char_table1, file = "Baseline_Characteristics_Table1.doc", title="Baseline Characteristics of Participant by Incident Stroke")
+
+################################################################################################################################################
+library(gtsummary)
+library(tidyverse)
+library(table1)
+library(flextable)
+library(magrittr)
+library(dplyr)
+
+Baseline<-Data %>% select(DM , HTN , Sex , AGE , BMI , Cholesterol, HDLc , LDLc ,SBP, DBP,
+                                        Smoking , Alcohol , Sedentary_Lifestyle ,Status)
+
+#Baseline<-Data %>% select(Diabetes_Mellitus , Hypertension , Sex , Age , Body Mass Index , Total Cholesterol , HDLc , LDLc , 
+                                         Systolic Blood Pressure, Diastolic Blood Pressure,Smoking Status, Alcohol Status, Sedentary_Lifestyle ,Status)
+
+ Baseline_Tab<-tbl_summary(Baseline, by= Status)%>%
+                            add_n() %>%
+                            modify_header(label = "**Variable**") %>%
+                            bold_labels() 
+
+
+ Baseline_Tab %>%
+  as_gt() %>%
+  gt::gtsave(filename = "H:/UNICOX/Baseline_Tab.rtf") # use extensions .html .tex .ltx .rtf
+
+For a Word file, use
+
+ Baseline_Tab %>%
+  as_flex_table() %>%
+  save_as_docx(filename ="C:/Users/User/Documents/Baseline_Tab1_17_01_24.docx")
+
+####################################################################################
+
+#https://www.emilyzabor.com/tutorials/survival_analysis_in_r_tutorial.html
+
+# Building a Survival Object for Time_Days
+
+install.packages("ggfortify") #Plotting survival curves
+library("ggfortify")
+library(survival)
+library(ranger) ##fit a Random Forests Ensemble model to the data
+library(ggplot2)
+library(dplyr)
+library(ggfortify) # for autoplot() to draw survival curve
+library(survminer)  # for ggsurvplot() to draw survival curve
+library(spline)
+library(stargazer)
+library(gmodels)
+library(mosaic)
+####################################################################
+2.Diagnostics of Cox Model
+
+ggcoxzph(): Graphical test of proportional hazards. Displays a graph of the scaled Schoenfeld residuals, 
+along with a smooth curve using ggplot2. Wrapper around plot.cox.zph().
+
+ggcoxdiagnostics(): Displays diagnostics graphs presenting goodness of Cox Proportional Hazards Model fit.
+
+ggcoxfunctional(): Displays graphs of continuous explanatory variable 
+against martingale residuals of null cox proportional hazards model. 
+It helps to properly choose the functional form of continuous variable in cox model.
+
+3.Summary of Cox Model
+
+ggforest(): Draws forest plot for CoxPH model.
+#################################################################################
+########################################################################################
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+#This analysis has been performed using R software (ver. 3.3.2).#
+
+  Data <- read_csv("H:/DATA_13_4-23/Thesis_Dataset_13_4_23.csv"))
+
+dim(Data)
+[1] 244340     33
+
+ #(DM ,HTN ,Sex , AGE, BMI , Cholesterol, HDLc , LDLc , Non_HDL, SBP , DBP , Sedentary_Lifestyle, Smoking , Alcohol, CENSOR,Duration_InYrs)
+
+   
+Survival_Model_Data<-subset(Data,select=c(DM ,HTN ,Sex , AGE, BMI , Cholesterol, HDLc , Sedentary_Lifestyle, Smoking , 
+                              Alcohol, Fasting_Glucose_GRS,Fasting_Insulin_GRS,HbA1c_GRS,T2DM_GRS,Duration_InYrs ,CENSOR))
+
+
+colnames(Survival_Model_Data)[6]<-"TC"
+colnames(Survival_Model_Data)[8]<-"Seden_life"
+colnames(Survival_Model_Data)[11]<-"FG_GRS"
+colnames(Survival_Model_Data)[12]<-"FI_GRS"
+colnames(Survival_Model_Data)[15]<-"Duration"
+
+dim(Survival_Model_Data)
+[1] 244340     16
+
+fwrite(Survival_Model_Data,"Survival_Model_Data15_4_23.csv",sep=",")
+
+mosaic::favstats(Duration ~ CENSOR, data = Survival_Model_Data)
+
+ CENSOR        min       Q1   median       Q3       max     mean        sd      n missing
+1      0 0.06835270 7.510595 8.213260 8.858510 10.304853 8.184438 0.8339881 242501       0
+2      1 0.01640465 2.951470 4.926863 6.539986  9.462748 4.716032 2.3136041   1839       0
+........................................................................................................................................................
+#Calculation of follow-up time
+For the median survival time, I suppose many people know how to deal with that through the Kaplan-Meier curve.
+To make this calculation more analytical, Schemper and Smith suggest using the Kaplan-Meier curve with the reversed status indicator 
+(if you use R, it can be seen that 1 to indicate the subject who is censored, and 0 to indicate the event.), where the median survival time can actually be interpreted as the median follow-up time.
+Suppose we have a set of OS survival data where 0 indicates the death status. In R that can be used as below.
+
+library(survival)
+fit(survfit(Surv(time,status=0)~1,data=os_Data)
+surv_median(fit)
+###############################################################################################################################################
+# Calculation the Median follow up
+# install.packages(c("lubridate", "ggsurvfit", "gtsummary", "tidycmprsk"))
+
+library(knitr)
+library(dplyr)
+library(survival)
+library(ggplot2)
+library(tibble)
+library(prodlim)
+library(lubridate)
+library(ggsurvfit)
+library(gtsummary)
+library(tidycmprsk)
+
+# devtools::install_github("zabore/condsurv")
+library(condsurv)
+
+
+Using KM
+
+mySurv<-Surv(time=Survival_Model_Data$Duration,event=Survival_Model_Data$CENSOR)
+
+survfit(mySurv~1)
+
+#median survival time
+
+plot(survfit(mySurv~1))
+
+#median Follow up time
+
+quantile(prodlim(Surv(time=Duration,event=CENSOR)~1,data=Survival_Model_Data, reverse=TRUE)) ~mediab FT
+
+Median time (IQR):8.22 (7.51;8.86)
+
+quantile(prodlim(Hist(time=Duration,event=CENSOR)~1,data=Survival_Model_Data, reverse=TRUE)) ~mediab FT
+
+#Quantiles of the potential follow up time distribution based on the Kaplan-Meier method 
+applied to the censored times reversing the roles of event status and censored.
+
+Table of quantiles and corresponding confidence limits:
+     q quantile lower upper
+1 0.00       NA    NA    NA
+2 0.25    8.859 8.853  8.86
+3 0.50    8.216 8.211  8.22
+4 0.75    7.511 7.505  7.52
+5 1.00    0.068 0.068  0.38
+Median time (IQR):8.22 (7.51;8.86)
+
+####################################################################################
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+             #UNIVARIATE COX REGRESSION#
+
+CoVar0<-c("AGE","BMI","Sex","Smoking","Alcohol", "Sedentary_Lifestyle","Cholesterol","HDLc","LDLc",
+           "Non_HDL" ,"TChol_HDL_Ratio","Hypertension",
+           "T2DM_GRS","Fasting_Glucose_GRS", "Fasting_Insulin_GRS", "HbA1c_GRS") 
+
+CoVar<-c("AGE","BMI","Sex","Smoking","Alcohol", "Sedentary_Lifestyle","Cholesterol","HDLc",
+           "TChol_HDL_Ratio","Hypertension",
+           "T2DM_GRS","Fasting_Glucose_GRS", "Fasting_Insulin_GRS", "HbA1c_GRS") 
+#attach(survival_Data)
+
+Univariate Cox analyses can be computed as follow:
+
+
+#To apply the univariate coxph function to multiple covariates at once, type this:
+
+ univ_form <- sapply(CoVar,
+                        function(x) as.formula(paste('Surv(Duration_InYrs,CENSOR==1)~', x)))
+   
+ =============================================================================================================                    
+
+ univ_models <- lapply(univ_form, function(x){coxph(x, data = survival_Data)})
+
+==============================================================================================================
+# Extract data 
+
+univ_results <- lapply(univ_models,
+                       function(x){ 
+                          x <- summary(x)
+                          p.value<-signif(x$wald["pvalue"], digits=2)
+                          wald.test<-signif(x$wald["test"], digits=2)
+                          beta<-signif(x$coef[1], digits=2);#coeficient beta
+                          HR <-signif(x$coef[2], digits=2);#exp(beta)
+                          HR.confint.lower <- signif(x$conf.int[,"lower .95"], 2)
+                          HR.confint.upper <- signif(x$conf.int[,"upper .95"],2)
+                          HR <- paste0(HR, " (", 
+                                      HR.confint.lower, "-", HR.confint.upper, ")")
+                          res<-c(beta, HR, wald.test, p.value)
+                          names(res)<-c("beta", "HR (95% CI for HR)", "wald.test", 
+                                        "p.value")
+                          return(res)
+                          #return(exp(cbind(coef(x),confint(x))))
+                         })
+
+   res <- t(as.data.frame(univ_results, check.names = FALSE))
+
+   UniCoxph_ALL<-as.data.frame(res)
+
+library(arsenal)
+library(magrittr)
+write2word(object, file, ...)
+
+write2html(UniCoxph_ALL,"UniCoxph_ALL.html",
+         title = "Univariate Cox Regression model for overall Population")
+
+write2pdf(UniCoxph_ALL,"UniCoxph_ALL.pdf",keep.md = TRUE, quiet = TRUE,
+                      title = "Univariate Cox Regression model for overall Population",text=TRUE)
+
+write2word(UniCoxph_ALL, "UniCoxph_ALL.doc",keep.md = TRUE, quiet = TRUE,
+                  title ="Univariate Cox Regression model for overall Population")
+#######################################################################################################################################
+
+
+
+#######################################################################################################################################
+
+
+univ_form <- sapply(CoVar,
+                        function(x) as.formula(paste('Surv(Duration_InYrs,CENSOR==1)~', x)))
+   
+ ===================================================================================================================================================                    
+
+ univ_models_No <- lapply(univ_form, function(x){coxph(x, data = survival_Data[which(survival_Data$Diabetes_Mellitus=="NO"),])})
+
+=========================================================================================================================================================
+# Extract data 
+
+library(arsenal)
+library(magrittr)
+write2word(object, file, ...)
+
+write2html(UniCoxph_No,"UniCoxph_No.html",
+         title = "Univariate Cox Regression model for Non Diabetic Population")
+
+write2pdf(UniCoxph_No,"UniCoxph_No.pdf")
+
+write2word(UniCoxph_No, "UniCoxph_No.doc", quiet = TRUE,
+                 title = "Univariate Cox Regression model for Non Diabetic Population")
+
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+ xxMODEL 4. | Full Multivariable Model Development  Focus of the analysis is on PRS |xxx
+                                                      
+ ===============================================================================================================================================                                                     
+ ===============================================================================================================================================
+ stargazer(PRS.MultiCox_1, PRS.MultiCox_2, PRS.MultiCox_3, PRS.MultiCox_4, type="text",
+            title="Multivariable Predictors Cox Regression Models : beta (95% CI)", 
+           align=TRUE, digits = 2, digits.extra = 2, dep.var.labels=c("y=Censor (1=Event)"), column.labels = c("ALL", "DM.Yes", "DM.No"),
+          star.cutoffs = c(0.1, 0.05, 0.01), omit.stat=c("LL","ser","f"), no.space=TRUE, ci=TRUE, 
+          ci.level=0.95, single.row=TRUE, intercept.bottom = FALSE,  out="PRS_Full.Multicoxph.doc") # out="D:/DATA_FOLDER/Unicoxph.txt")
+
+############################################################################################################################### 
+   colnames(Survival_Model_Data)[6]<-"TC"
+colnames(Survival_Model_Data)[8]<-"Seden_life"
+colnames(Survival_Model_Data)[11]<-"FG_GRS"
+colnames(Survival_Model_Data)[12]<-"FI_GRS"
+colnames(Survival_Model_Data)[15]<-"Duration"
+
+Survival_Model_Data<-subset(Data,select=c(DM ,HTN ,Sex , AGE, BMI , TC, HDLc , Seden_life, Smoking , 
+                              Alcohol, FG_GRS,FFI_GRS,HbA1c_GRS,T2DM_GRS,Duration ,CENSOR))
+
+xxMODEL 4. | Full Multivariable Model Development  Focus of the analysis is on T2DM_GRS|xxx
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+ 
+ T2DM <- coxph(Surv(Duration, CENSOR ==1) ~  T2DM_GRS + AGE + Sex , data = survival_Data) 
+
+ T2DM_Yes <-coxph(Surv(Duration, CENSOR ==1) ~  T2DM_GRS + AGE + Sex , data = Survival_Model_Data[which(Survival_Model_Data$DM=="YES"),]) 
+
+ T2DM_No <-coxph(Surv(Duration, CENSOR ==1) ~  T2DM_GRS + AGE + Sex , data = Survival_Model_Data[which(Survival_Model_Data$DM=="NO"),]) 
+
+
+stargazer(T2DM, T2DM_Yes, T2DM_No, type="text",
+            title="Multivariable Predictors Cox Regression Models : beta (95% CI)", 
+           align=TRUE, digits = 2, digits.extra = 2, dep.var.labels=c("y=Censor (1=Event)"), column.labels = c("Overall","DM.Yes", "DM.No"),
+          star.cutoffs = c(0.1, 0.05, 0.01), omit.stat=c("LL","ser","f"), no.space=TRUE, ci=TRUE, 
+          ci.level=0.95, single.row=TRUE, intercept.bottom = FALSE,  out="T2DM_Age_sex_Adjusted")
+
+ #Testing proportional Hazards assumption#
+
+ 1. using statistical tests and graphical diagnostics based on the scaled Schoenfeld residuals.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+library("survival")
+
+T2DM.test <- cox.zph(T2DM)
+ 
+ T2DM.test
+ 
+  ggcoxzph(T2DM.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ T2DM_test_Yes <- cox.zph(T2DM_Yes)
+ 
+ T2DM_test_Yes
+
+ggcoxzph(T2DM_test_Yes)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ T2DM_test_No <- cox.zph(T2DM_No)
+ 
+ T2DM_test_No
+
+ggcoxzph(T2DM_test_No)
+=====================================================================================================================================================
+
+
+ T2DM.MultiCox <- coxph(Surv(Duration, CENSOR ==1) ~  T2DM_GRS + HTN + AGE + Sex + BMI +  TC + HDLc +
+                                                                     Smoking + Alcohol + Seden_life , data = Survival_Model_Data) 
+   summary( T2DM.MultiCox) 
+
+=============================================================================================================================================== 
+   
+ 
+   T2DM.MultiCox_DM_Yes <-  coxph(Surv(Duration, CENSOR ==1) ~   T2DM_GRS + HTN + AGE + Sex + BMI +  TC + HDLc +
+                                                                  Smoking + Alcohol + Seden_life,
+                                                                  data = Survival_Model_Data[which(Survival_Model_Data$DM=="YES"),]) 
+                                                          
+ summary(T2DM.MultiCox_DM_Yes)
+
+ =============================================================================================================================================== 
+ T2DM.MultiCox_DM_No <-coxph(Surv(Duration, CENSOR ==1) ~   T2DM_GRS + HTN + AGE + Sex + BMI +  TC + HDLc +
+                                                                  Smoking + Alcohol + Seden_life,
+                                                                  data = Survival_Model_Data[which(Survival_Model_Data$DM=="NO"),]) 
+ 
+  summary(T2DM.MultiCox_DM_No)
+
+ =============================================================================================================================================== 
+stargazer( T2DM.MultiCox,T2DM.MultiCox_DM_Yes, T2DM.MultiCox_DM_No,   type="text",
+            title="Multivariable Predictors Cox Regression Models : beta (95% CI)", 
+           align=TRUE, digits = 2, digits.extra = 2, dep.var.labels=c("y=Censor (1=Event)"), column.labels = c("Overall","DM.Yes", "DM.No"),
+          star.cutoffs = c(0.1, 0.05, 0.01), omit.stat=c("LL","ser","f"), no.space=TRUE, ci=TRUE, 
+          ci.level=0.95, single.row=TRUE, intercept.bottom = FALSE,  out="T2DM.MultiCox.doc")
+=============================================================================================================================================================
+ 1. using statistical tests and graphical diagnostics based on the scaled Schoenfeld residuals.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+library("survival")
+
+T2DM.MultiCox.test <- cox.zph(T2DM.MultiCox)
+ 
+ T2DM.MultiCox.test
+ 
+  ggcoxzph(T2DM.MultiCox.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ T2DM.MultiCox_DM_Yes_test <- cox.zph(T2DM.MultiCox_DM_Yes)
+ 
+T2DM.MultiCox_DM_Yes_test
+
+ggcoxzph(T2DM.MultiCox_DM_Yes_test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+  T2DM.MultiCox_DM_No_test <- cox.zph( T2DM.MultiCox_DM_No)
+ 
+ T2DM.MultiCox_DM_No_test
+
+ggcoxzph(T2DM.MultiCox_DM_No_test)
+
+############################################################################################################################### 
+
+par(mfrow=c(3,1))
+library(patchwork)
+library(ggplot2)
+
+P1<-ggforest(T2DM.MultiCox_DM_Yes,main = "Hazard ratio for Diabetic Participants", data=survival_Data[which(survival_Data$Diabetes_Mellitus=="YES"),])
+
+P2<-ggforest(T2DM.MultiCox_DM_No, main = "Hazard ratio for Non Diabetic Participants",data= survival_Data[which(survival_Data$Diabetes_Mellitus=="NO"),])
+
+P3<-ggforest(T2DM.MultiCox, main = "Hazard ratio for  Overall Participants",data=survival_Data)
+
+design<-"CBCA"
+wrap_plots(list(B=P1, A=P2, C=P3),design=design)
+
+############################################################################################################################### 
+
+xxMODEL 4. | Full Multivariable Model Development  Focus of the analysis is on  Fasting_Glucose_GRS|xxx
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+FG <- coxph(Surv(Duration, CENSOR ==1) ~  FG_GRS + AGE + Sex , data = survival_Data) 
+
+ FG_Yes <-coxph(Surv(Duration, CENSOR ==1) ~  FG_GRS + AGE + Sex , data = Survival_Model_Data[which(Survival_Model_Data$DM=="YES"),]) 
+
+ FG_No <-coxph(Surv(Duration, CENSOR ==1) ~  FG_GRS + AGE + Sex , data = Survival_Model_Data[which(Survival_Model_Data$DM=="NO"),]) 
+
+
+stargazer(FG, FG_Yes, FG_No, type="text",
+            title="Multivariable Predictors Cox Regression Models : beta (95% CI)", 
+           align=TRUE, digits = 2, digits.extra = 2, dep.var.labels=c("y=Censor (1=Event)"), column.labels = c("Overall","DM.Yes", "DM.No"),
+          star.cutoffs = c(0.1, 0.05, 0.01), omit.stat=c("LL","ser","f"), no.space=TRUE, ci=TRUE, 
+          ci.level=0.95, single.row=TRUE, intercept.bottom = FALSE,  out="FG_Age_sex_Adjusted")
+====================================================================================================================
+ 1. using statistical tests and graphical diagnostics based on the scaled Schoenfeld residuals.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+library("survival")
+
+FG.test <- cox.zph(FG)
+ 
+ FG.test
+ 
+  ggcoxzph(FG.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ FG_test_Yes <- cox.zph(FG_Yes)
+ 
+ FG_test_Yes
+
+ggcoxzph(FG_test_Yes)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ FG_test_No <- cox.zph(FG_No)
+ 
+ FG_test_No
+
+ggcoxzph(FG_test_No)
+=====================================================================================================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+=====================================================================================================================================================
+
+ FG.MultiCox <-  ccoxph(Surv(Duration, CENSOR ==1) ~  FG_GRS + HTN + AGE + Sex + BMI +  TC + HDLc +
+                                                                     Smoking + Alcohol + Seden_life , data = Survival_Model_Data)  
+   summary(FG.MultiCox) 
+
+=============================================================================================================================================== 
+
+ FG.MultiCox_DM_Yes <-  ccoxph(Surv(Duration, CENSOR ==1) ~    FG_GRS + HTN + AGE + Sex + BMI +  TC + HDLc +
+                                                                  Smoking + Alcohol + Seden_life,
+                                                                  data = Survival_Model_Data[which(Survival_Model_Data$DM=="YES"),]) 
+                                                          
+ summary(FG.MultiCox_DM_Yes)
+
+ =============================================================================================================================================== 
+FG.MultiCox_DM_No <-  ccoxph(Surv(Duration, CENSOR ==1) ~   FG_GRS + HTN + AGE + Sex + BMI +  TC + HDLc +
+                                                                  Smoking + Alcohol + Seden_life,
+                                                                  data = Survival_Model_Data[which(Survival_Model_Data$DM=="NO"),]) 
+  summary(FG.MultiCox_DM_No)
+
+ =============================================================================================================================================== 
+stargazer(  FG.MultiCox, FG.MultiCox_DM_Yes,  FG.MultiCox_DM_No, type="text",
+            title="Multivariable Predictors Cox Regression Models : beta (95% CI)", 
+           align=TRUE, digits = 2, digits.extra = 2, dep.var.labels=c("y=Censor (1=Event)"), column.labels = c("Overall,"DM.Yes", "DM.No""),
+          star.cutoffs = c(0.1, 0.05, 0.01), omit.stat=c("LL","ser","f"), no.space=TRUE, ci=TRUE, 
+          ci.level=0.95, single.row=TRUE, intercept.bottom = FALSE,  out="FG.MultiCox.doc")
+############################################################################################################################### 
+
+ 1. using statistical tests and graphical diagnostics based on the scaled Schoenfeld residuals.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+library("survival")
+
+ FG.MultiCox.test <- cox.zph(FG.MultiCox)
+ 
+ FG.MultiCox.test
+ 
+  ggcoxzph(FG.MultiCox.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ FG.MultiCox_DM_Yes_test <- cox.zph(FG.MultiCox_DM_Yes)
+ 
+FG.MultiCox_DM_Yes_test
+
+ggcoxzph(FG.MultiCox_DM_Yes_test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+  FG.MultiCox_DM_No_test <- cox.zph( FG.MultiCox_DM_No)
+ 
+ FG.MultiCox_DM_No_test
+
+ggcoxzph(FG.MultiCox_DM_No_test)
+
+############################################################################################################################### 
+
+par(mfrow=c(3,1))
+
+ggforest(FG.MultiCox_DM_Yes, main = "Hazard ratio for Diabetic Participants")
+
+ggforest(FG.MultiCox_DM_No, main = "Hazard ratio for Non Diabetic Participants")
+
+ggforest(FG.MultiCox, main = "Hazard ratio for  Overall Participants")
+############################################################################################################################### 
+
+
+xxMODEL 4. | Full Multivariable Model Development  Focus of the analysis is on  Fasting_Insulin_GRS|xxx
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+ FI<- coxph(Surv(Duration, CENSOR ==1) ~  FI_GRS + AGE + Sex , data = survival_Data) 
+
+ FI_Yes <-coxph(Surv(Duration, CENSOR ==1) ~  FI_GRS + AGE + Sex , data = Survival_Model_Data[which(Survival_Model_Data$DM=="YES"),]) 
+
+ FI_No <-coxph(Surv(Duration, CENSOR ==1) ~  FI_GRS + AGE + Sex , data = Survival_Model_Data[which(Survival_Model_Data$DM=="NO"),]) 
+
+
+stargazer(FI, FI_Yes, FI_No, type="text",
+            title="Multivariable Predictors Cox Regression Models : beta (95% CI)", 
+           align=TRUE, digits = 2, digits.extra = 2, dep.var.labels=c("y=Censor (1=Event)"), column.labels = c("Overall","DM.Yes", "DM.No"),
+          star.cutoffs = c(0.1, 0.05, 0.01), omit.stat=c("LL","ser","f"), no.space=TRUE, ci=TRUE, 
+          ci.level=0.95, single.row=TRUE, intercept.bottom = FALSE,  out="FI_Age_sex_Adjusted")
+
+
+#########################################################################################################################################
+ 1. using statistical tests and graphical diagnostics based on the scaled Schoenfeld residuals.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+library("survival")
+
+FI.test <- cox.zph(FI)
+ 
+ FI.test
+ 
+  ggcoxzph(FI.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ FI_test_Yes <- cox.zph(FI_Yes)
+ 
+ FI_test_Yes
+
+ggcoxzph(FI_test_Yes)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ FI_test_No <- cox.zph(FI_No)
+ 
+ FI_test_No
+
+ggcoxzph(FI_test_No)
+=====================================================================================================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+=====================================================================================================================================================
+
+ FI.MultiCox <-  ccoxph(Surv(Duration, CENSOR ==1) ~  FI_GRS + HTN + AGE + Sex + BMI +  TC + HDLc +
+                                                                     Smoking + Alcohol + Seden_life , data = Survival_Model_Data)  
+   summary(FI.MultiCox) 
+
+=============================================================================================================================================== 
+
+ FI.MultiCox_DM_Yes <-  ccoxph(Surv(Duration, CENSOR ==1) ~    FI_GRS + HTN + AGE + Sex + BMI +  TC + HDLc +
+                                                                  Smoking + Alcohol + Seden_life,
+                                                                  data = Survival_Model_Data[which(Survival_Model_Data$DM=="YES"),]) 
+                                                          
+ summary(FI.MultiCox_DM_Yes)
+
+ =============================================================================================================================================== 
+FI.MultiCox_DM_No <-  ccoxph(Surv(Duration, CENSOR ==1) ~ FI_GRS + HTN + AGE + Sex + BMI +  TC + HDLc +
+                                                                  Smoking + Alcohol + Seden_life,
+                                                                  data = Survival_Model_Data[which(Survival_Model_Data$DM=="NO"),]) 
+  summary(FI.MultiCox_DM_No)
+
+ =============================================================================================================================================== 
+stargazer(  FI.MultiCox, FI.MultiCox_DM_Yes,  FI.MultiCox_DM_No, type="text",
+            title="Multivariable Predictors Cox Regression Models : beta (95% CI)", 
+           align=TRUE, digits = 2, digits.extra = 2, dep.var.labels=c("y=Censor (1=Event)"), column.labels = c("Overall,"DM.Yes", "DM.No""),
+          star.cutoffs = c(0.1, 0.05, 0.01), omit.stat=c("LL","ser","f"), no.space=TRUE, ci=TRUE, 
+          ci.level=0.95, single.row=TRUE, intercept.bottom = FALSE,  out=FI.MultiCox.doc")
+
+
+============================================================================================================================================
+1. using statistical tests and graphical diagnostics based on the scaled Schoenfeld residuals.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+library("survival")
+
+FI.MultiCox.test <- cox.zph(FI.MultiCox)
+ 
+ FI.MultiCox.test
+ 
+  ggcoxzph(FI.MultiCox.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ FI.MultiCox_DM_Yes_test <- cox.zph(FI.MultiCox_DM_Yes)
+ 
+FI.MultiCox_DM_Yes_test
+
+ggcoxzph(FI.MultiCox_DM_Yes_test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+  FI.MultiCox_DM_No_test <- cox.zph( FI.MultiCox_DM_No)
+ 
+ FI.MultiCox_DM_No_test
+
+ggcoxzph(FI.MultiCox_DM_No_test)
+
+############################################################################################################################### 
+############################################################################################################################### 
+
+############################################################################################################################### 
+
+############################################################################################################################### 
+xxMODEL 4. | Full Multivariable Model Development  Focus of the analysis is on HbA1c_GRS |xxx
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+ HbA1c<- coxph(Surv(Duration, CENSOR ==1) ~  HbA1c_GRS + AGE + Sex , data = survival_Data) 
+
+ HbA1c_Yes <-coxph(Surv(Duration, CENSOR ==1) ~  HbA1c_GRS + AGE + Sex , data = Survival_Model_Data[which(Survival_Model_Data$DM=="YES"),]) 
+
+ HbA1c_No <-coxph(Surv(Duration, CENSOR ==1) ~  HbA1c_GRS + AGE + Sex , data = Survival_Model_Data[which(Survival_Model_Data$DM=="NO"),]) 
+
+
+stargazer(HbA1c, HbA1c_Yes,HbA1c_No, type="text",
+            title="Multivariable Predictors Cox Regression Models : beta (95% CI)", 
+           align=TRUE, digits = 2, digits.extra = 2, dep.var.labels=c("y=Censor (1=Event)"), column.labels = c("Overall","DM.Yes", "DM.No"),
+          star.cutoffs = c(0.1, 0.05, 0.01), omit.stat=c("LL","ser","f"), no.space=TRUE, ci=TRUE, 
+          ci.level=0.95, single.row=TRUE, intercept.bottom = FALSE,  out="HbA1c_Age_sex_Adjusted")
+=====================================================================================================================================================
+ #########################################################################################################################################
+ 1. using statistical tests and graphical diagnostics based on the scaled Schoenfeld residuals.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+library("survival")
+
+HbA1c.test <- cox.zph(HbA1c)
+ 
+ HbA1c.test
+ 
+  ggcoxzph(HbA1c.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ HbA1c_test_Yes <- cox.zph(HbA1c_Yes)
+ 
+ HbA1c_test_Yes
+
+ggcoxzph(HbA1c_test_Yes)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ HbA1c_test_No <- cox.zph(HbA1c_No)
+ 
+HbA1c_test_No
+
+ggcoxzph(HbA1c_test_No)
+=====================================================================================================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+=====================================================================================================================================================
+
+HbA1c.MultiCox <-  ccoxph(Surv(Duration, CENSOR ==1) ~ HbA1c_GRS + HTN + AGE + Sex + BMI +  TC + HDLc +
+                                                                     Smoking + Alcohol + Seden_life , data = Survival_Model_Data)  
+   summary(HbA1c.MultiCox) 
+
+=============================================================================================================================================== 
+
+ HbA1c.MultiCox_DM_Yes <-  ccoxph(Surv(Duration, CENSOR ==1) ~    HbA1c_GRS + HTN + AGE + Sex + BMI +  TC + HDLc +
+                                                                  Smoking + Alcohol + Seden_life,
+                                                                  data = Survival_Model_Data[which(Survival_Model_Data$DM=="YES"),]) 
+                                                          
+ summary(HbA1c.MultiCox_DM_Yes)
+
+ =============================================================================================================================================== 
+HbA1c.MultiCox_DM_No <-  ccoxph(Surv(Duration, CENSOR ==1) ~ HbA1c_GRS + HTN + AGE + Sex + BMI +  TC + HDLc +
+                                                                  Smoking + Alcohol + Seden_life,
+                                                                  data = Survival_Model_Data[which(Survival_Model_Data$DM=="NO"),]) 
+  summary(HbA1c.MultiCox_DM_No)
+
+ =============================================================================================================================================== 
+stargazer(HbA1c.MultiCox, HbA1c.MultiCox_DM_Yes,  HbA1c.MultiCox_DM_No, type="text",
+            title="Multivariable Predictors Cox Regression Models : beta (95% CI)", 
+           align=TRUE, digits = 2, digits.extra = 2, dep.var.labels=c("y=Censor (1=Event)"), column.labels = c("Overall,"DM.Yes", "DM.No""),
+          star.cutoffs = c(0.1, 0.05, 0.01), omit.stat=c("LL","ser","f"), no.space=TRUE, ci=TRUE, 
+          ci.level=0.95, single.row=TRUE, intercept.bottom = FALSE,  out=HbA1c.MultiCox.doc")
+############################################################################################################################### 
+############################################################################################################################### 
+
+============================================================================================================================================
+1. using statistical tests and graphical diagnostics based on the scaled Schoenfeld residuals.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+library("survival")
+
+HbA1c.MultiCox.test <- cox.zph(HbA1c.MultiCox)
+ 
+ HbA1c.MultiCox.test
+ 
+  ggcoxzph(HbA1c.MultiCox.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+HbA1c.MultiCox_DM_Yes_test <- cox.zph(HbA1c.MultiCox_DM_Yes)
+ 
+HbA1c.MultiCox_DM_Yes_test
+
+ggcoxzph(HbA1c.MultiCox_DM_Yes_test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+  HbA1c.MultiCox_DM_No_test <- cox.zph( HbA1c.MultiCox_DM_No)
+ 
+ HbA1c.MultiCox_DM_No_test
+
+ggcoxzph(HbA1c.MultiCox_DM_No_test)
+
+############################################################################################################################### 
+############################################################################################################################### 
+
+########################################################################################################################################
+
+par(mfrow=c(3,1))
+
+ggforest(HB.MultiCox_DM_Yes, main = "Hazard ratio for Diabetic Participants")
+
+ggforest(HB.MultiCox_DM_No, main = "Hazard ratio for Non Diabetic Participants")
+
+ggforest(HB.MultiCox, main = "Hazard ratio for Overall Participants")
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+   #Testing proportional Hazards assumption#
+
+ 1. using statistical tests and graphical diagnostics based on the scaled Schoenfeld residuals.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+library("survival")
+
+ Stroke_PRS.test <- cox.zph(PRS.MultiCox)
+ 
+ Stroke_PRS.test
+
+ ggcoxzph(Stroke_PRS.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''    
+  Stroke_PRS.test_DM_Yes<-cox.zph(PRS.MultiCox_DM_Yes)
+
+ Stroke_PRS.test_DM_Yes
+ 
+ ggcoxzph(Stroke_PRS.test_DM_Yes)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+ Stroke_PRS.test_DM_No<-cox.zph(PRS.MultiCox_DM_No)
+
+ Stroke_PRS.test_DM_No
+
+ggcoxzph(Stroke_PRS.test_DM_No)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+===========================================================================================================================
+T2DM_GRS.test <- cox.zph(T2DM.MultiCox)
+ 
+ T2DM_GRS.test
+ 
+  ggcoxzph(T2DM_GRS.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ T2DM_GRS.test_DM_Yes <- cox.zph(T2DM.MultiCox_DM_Yes)
+ 
+ T2DM_GRS.test_DM_Yes
+
+ggcoxzph(T2DM_GRS.test_DM_Yes)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+ T2DM_GRS.test_DM_No <- cox.zph(T2DM.MultiCox_DM_No)
+ 
+ T2DM_GRS.test_DM_No
+
+ggcoxzph(T2DM_GRS.test_DM_No)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+===========================================================================================================================
+
+FG_GRS.test <- cox.zph(FG.MultiCox)
+ 
+ FG_GRS.test
+
+ggcoxzph(FG_GRS.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ FG_GRS.test_DM_Yes <- cox.zph(FG.MultiCox_DM_Yes)
+ 
+ FG_GRS.test_DM_Yes
+
+ggcoxzph(FG_GRS.test_DM_Yes)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+FG_GRS.test_DM_No <- cox.zph(FG.MultiCox_DM_No)
+ 
+FG_GRS.test_DM_No
+
+ggcoxzph(FG_GRS.test_DM_No)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+==========================================================================================================================
+
+ FI_GRS.test <- cox.zph(FI.MultiCox)
+ 
+ FI_GRS.test
+
+ggcoxzph(FI_GRS.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ FI_GRS.test_DM_Yes <- cox.zph(FI.MultiCox_DM_Yes)
+ 
+ FI_GRS.test_DM_Yes
+
+ggcoxzph(FI_GRS.test_DM_Yes)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+FI_GRS.test_DM_No <- cox.zph(FI.MultiCox_DM_No)
+ 
+FI_GRS.test_DM_No
+
+ggcoxzph(FI_GRS.test_DM_No)
+
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+==========================================================================================================================
+
+ HB_GRS.test <- cox.zph(HB.MultiCox)
+ 
+ HB_GRS.test
+
+ggcoxzph(HB_GRS.test)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ HB_GRS.test_DM_Yes <- cox.zph(HB.MultiCox_DM_Yes)
+ 
+ HB_GRS.test_DM_Yes
+
+ ggcoxzph(HB_GRS.test_DM_Yes)
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+HB_GRS.test_DM_No <- cox.zph(HB.MultiCox_DM_No)
+ 
+HB_GRS.test_DM_No
+
+ ggcoxzph(HB_GRS.test_DM_No)
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

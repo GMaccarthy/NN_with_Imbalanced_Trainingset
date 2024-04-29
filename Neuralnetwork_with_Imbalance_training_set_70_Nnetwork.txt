@@ -1,0 +1,290 @@
+rm(list = ls())
+library(data.table)
+library(ROSE)
+library(randomForest)
+library(vip)       # variable importance
+#library(tidyverse)
+library(readr)
+#library(tidymodels)
+#library(textrecipes)
+#library(LiblineaR)
+#library(tidytext)
+library(caret) #R.4.3.0
+library(randomForest)
+library(vip)       # variable importance
+library(tidyverse)
+library(readr)
+library(ranger) #R.4.2.2
+library(nnet)
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+====================================================================================
+*******************************************************************************************
+train_data<-fread("scaled_train_data_70.csv")
+
+ colnames(train_data)[c(12:21)]<-c("T2DM_Genetic_Liability",
+                            "BMI_Genetic_Liability",
+ 			    "WHR_Genetic_Liability",
+ 			    "Smoking_Initiation_Genetic_Liability",
+ 			    "Smoking_Cessation_Genetic_Liability",
+ 			    "Smoking_Heaviness_Genetic_Liability",
+  			    "HDL_Genetic_Liability",
+                            "LDL_Genetic_Liability",
+                           "Total_Cholesterol_Genetic_Liability",
+ 			    "Triglycerides_Genetic_Liability")
+
+ colnames(train_data)[4]<-"Smoking_Status"
+ colnames(train_data)[5]<-"Alcohol_Status"
+ colnames(train_data)[8]<-"Total_Cholesterol"
+ colnames(train_data)[11]<-"Sedentary_Lifestyle"
+
+
+ train_data<-as.data.frame(unclass(train_data),stringsAsFactors = TRUE)
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+vip$data
+A tibble: 10 × 2
+   Variable                             Importance
+   <chr>                                     <dbl>
+ 1 Total_Cholesterol                         100  
+ 2 HDLc                                       58.7
+ 3 LDLc                                       55.6
+ 4 BMI                                        36.1
+ 5 Age                                        28.6
+ 6 Smoking_Initiation_Genetic_Liability       19.3
+ 7 Smoking_Cessation_Genetic_Liability        18.5
+ 8 WHR_Genetic_Liability                      15.9
+ 9 Total_Cholesterol_Genetic_Liability        13.5
+10 SexMale                                    12.4
+
+===============================================================================================================================
+
+train_data<-train_data[,c(1,8,9,10,7,6,15,16,14,20,3)]
+-------------------------------------------------------------------------------------------------------------------------
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#control <- trainControl(method="cv", number=5, classProbs=TRUE, summaryFunction=twoClassSummary)
+
+set.seed(500)
+# prepare resampling method
+
+# Define the training control
+
+fitControl <- trainControl(
+    method = "cv",                   # k-fold cross validation
+    number = 5,                      # number of folds
+    savePredictions = 'final',       # saves predictions for optimal tuning parameter
+    classProbs = TRUE,                  # should class probabilities be returned
+    summaryFunction=twoClassSummary  # results summary function
+) 
+=================================================================================================================
+
+# Training model for Clinical factors
+
+nn_nn_fit70 <- train(HTN ~., data= train_data, method='nnet', trControl = fitControl, verbose = FALSE, metric = "ROC")
+ 
+   print(nn_nn_fit70)
+Neural Network 
+
+171304 samples
+    10 predictor
+     2 classes: 'NO', 'YES' 
+
+No pre-processing
+Resampling: Cross-Validated (5 fold) 
+Summary of sample sizes: 137044, 137043, 137044, 137042, 137043 
+
+
+ROC was used to select the optimal model using the largest value.
+The final values used for the model were size = 5 and decay = 0.
+-------------------------------------------------------------------------------------
+
+ nn_fit70$results
+ 
+nn_fit70$bestTune
+7    5     0
+================================================================================================
+
+get_best_result = function(caret_fit) {
+  best = which(rownames(caret_fit$results) == rownames(caret_fit$bestTune))
+  best_result = caret_fit$results[best, ]
+  rownames(best_result) = NULL
+  best_result
+}
+
+get_best_result(nn_nn_fit70)
+size decay       ROC     Sens      Spec       ROCSD      SensSD      SpecSD
+1    5     0 0.7204735 0.667954 0.6527505 0.001972961 0.002406189 0.004601508
+=======================================================================================
+--------------------------------------------------------------------------------------
+##compute variable importance
+
+ vip<-vip(nn_nn_fit70, num_features = 10)
+
+vip
+
+vip$data
+ A tibble: 10 × 2
+   Variable                             Importance
+   <chr>                                     <dbl>
+ 1 HDLc                                     100   
+ 2 Total_Cholesterol                         91.7 
+ 3 Total_Cholesterol_Genetic_Liability       68.8 
+ 4 LDLc                                      54.0 
+ 5 Smoking_Initiation_Genetic_Liability      41.1 
+ 6 Smoking_Cessation_Genetic_Liability       25.0 
+ 7 BMI                                       17.1 
+ 8 SexMale                                    8.85
+ 9 Age                                        6.75
+10 WHR_Genetic_Liability                      0   
+
+------------------------------------------------------------------------------------------------------
+============================================================================================
+
+*******************************************************************************************
+test_data <- read_csv("scaled_test_data_70.csv")
+
+ colnames(test_data)[c(12:21)]<-c("T2DM_Genetic_Liability",
+                            "BMI_Genetic_Liability",
+ 			    "WHR_Genetic_Liability",
+ 			    "Smoking_Initiation_Genetic_Liability",
+ 			    "Smoking_Cessation_Genetic_Liability",
+ 			    "Smoking_Heaviness_Genetic_Liability",
+  			    "HDL_Genetic_Liability",
+                            "LDL_Genetic_Liability",
+                           "Total_Cholesterol_Genetic_Liability",
+ 			    "Triglycerides_Genetic_Liability")
+
+ colnames(test_data)[4]<-"Smoking_Status"
+ colnames(test_data)[5]<-"Alcohol_Status"
+ colnames(test_data)[8]<-"Total_Cholesterol"
+ colnames(test_data)[11]<-"Sedentary_Lifestyle"
+
+
+test_data<-as.data.frame(unclass(test_data),stringsAsFactors = TRUE)
+
+--------------------------------------------------------------------------------------------------
+test_data<-test_data[,c(1,8,9,10,7,6,15,16,14,20,3)]
+------------------------------------------------------------------------------------------------------------------------
+========================================================================================================================
+library(pROC)
+
+predictions <- predict(nn_nn_fit70, test_data,type="prob",reshape = TRUE)
+
+#predict$predictions[2] same as predict$predictions$YES# second column of prediction
+
+test_data$predict_probability <- predictions[,2]
+
+#test_data$predict_probability<-predict(nn_fit70, test_data,type="prob",reshape = TRUE)
+
+test_data$predicted_class<- ifelse(test_data$predict_probability > 0.5,"YES","NO")
+
+#test_data<-as.data.frame(unclass(test_data),stringsAsFactors = TRUE)
+
+mean(test_data$HTN == test_data$predicted_class)#Accuracy
+
+[1] 0.6617675
+===================================================================================================================
+=======================================================================================================================
+
+auc(test_data$HTN,test_data$predict_probability)
+
+Setting levels: control = NO, case = YES
+Setting direction: controls < cases
+Area under the curve:  0.719
+
+roc_score=roc(test_data$HTN,test_data$predict_probability,ci=TRUE)
+roc_score
+
+Call:
+roc.default(response = test_data$HTN, predictor = test_data$predict_probability,     ci = TRUE)
+
+Data: test_data$predict_probability in 38286 controls (test_data$HTN NO) < 35128 cases (test_data$HTN YES).
+Area under the curve: 0.719
+95% CI: 0.7154-0.7227 (DeLong)
+
+------------------------------------------------------------------------------------------------------
+pROC_obj_roc <- roc(test_data$HTN,test_data$predict_probability,
+                smoothed = TRUE,
+                # arguments for ci
+                ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+                # arguments for plot
+                plot=TRUE, auc.polygon=TRUE, max.auc.polygon=TRUE, grid=TRUE,
+                print.auc=TRUE, show.thres=TRUE)
+------------------------------------------------------------------------------------------------------
+======================================================================================================
+
+=====================================================================================================================
+
+library(rms)
+test_data<-test_data%>% mutate(HTN2=ifelse(HTN=="YES",1,0))
+
+val<-val.prob(test_data$predict_probability,test_data$HTN2,pl=TRUE,xlab="Predicted Probability",g=10, riskdist = "predicted")
+  Dxy       C (ROC)            R2             D      D:Chi-sq           D:p             U 
+ 4.380686e-01  7.190343e-01  1.902114e-01  1.538027e-01  1.129227e+04            NA  1.498731e-05 
+     U:Chi-sq           U:p             Q         Brier     Intercept         Slope          Emax 
+ 3.100279e+00  2.122184e-01  1.537877e-01  2.134163e-01 -9.710801e-03  9.861148e-01  1.491944e-02 
+          E90          Eavg           S:z           S:p 
+ 5.938263e-03  3.422027e-03  9.370030e-01  3.487570e-01 
+> 
+------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+library(caret)
+
+#predicted_HTN<-ifelse(Pred_prob$YES>0.5,"YES","NO")
+
+
+#test_data$predicted_class<- ifelse(test_data$predict_probability > 0.5,"YES","NO")
+
+predicted_HTN<-as.factor(test_data$predicted_class)
+
+Actual_HTN<-as.factor(test_data$HTN)
+
+cm <-confusionMatrix(predicted_HTN, Actual_HTN, positive="YES", mode="everything")
+
+cm
+
+Confusion Matrix and Statistics
+
+          Reference
+Prediction    NO   YES
+       NO  25346 11891
+       YES 12940 23237
+                                          
+               Accuracy : 0.6618          
+                 95% CI : (0.6583, 0.6652)
+    No Information Rate : 0.5215          
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.3231          
+                                          
+ Mcnemar's Test P-Value : 2.918e-11       
+                                          
+            Sensitivity : 0.6615          
+            Specificity : 0.6620          
+         Pos Pred Value : 0.6423          
+         Neg Pred Value : 0.6807          
+              Precision : 0.6423          
+                 Recall : 0.6615          
+                     F1 : 0.6518          
+             Prevalence : 0.4785          
+         Detection Rate : 0.3165          
+   Detection Prevalence : 0.4928          
+      Balanced Accuracy : 0.6618          
+                                          
+       'Positive' Class : YES             
+                                          
+----------------------------------------------------------------------------------------------------------
+cm$byClass
+         
+Sensitivity          Specificity       Pos Pred Value       Neg Pred Value 
+           0.6614951            0.6620174            0.6423142            0.6806671 
+           Precision               Recall                   F1           Prevalence 
+           0.6423142            0.6614951            0.6517636            0.4784918 
+      Detection Rate Detection Prevalence    Balanced Accuracy 
+           0.3165200            0.4927807            0.6617563 
+=========================================================================================================
+ 
+=================================================================================================================
+
+--------------------------------------------------------------------
+
